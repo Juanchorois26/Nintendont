@@ -2,6 +2,15 @@ name: Compilar con mando 360
 
 on:
   workflow_dispatch:
+    inputs:
+      usb_hid:
+        description: "USB_HID: 0 = con mando 360 (como revvv), 1 = modo normal (sin mando 360, para probar el HDD)"
+        required: true
+        default: "0"
+        type: choice
+        options:
+          - "0"
+          - "1"
 
 jobs:
   build:
@@ -33,10 +42,13 @@ jobs:
           EOF
           if grep -q '<<<<<<<\|>>>>>>>' loader/source/ppc/PADReadGC/source/PADReadGC.c; then
             echo "TODAVIA HAY MARCAS DE CONFLICTO"
-            grep -n -B3 -A3 '<<<<<<<\|>>>>>>>' loader/source/ppc/PADReadGC/source/PADReadGC.c
             exit 1
           fi
-          git diff --stat
+
+      - name: Elegir el modo USB
+        run: |
+          sed -i 's/^#define USB_HID .*/#define USB_HID ${{ inputs.usb_hid }}/' kernel/HID.c
+          grep -n "define USB_HID" kernel/HID.c
 
       - name: Compilar
         run: |
@@ -46,9 +58,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nintendont-mando360
+          name: nintendont-usbhid${{ inputs.usb_hid }}
           path: |
             **/*.dol
             controllerconfigs/045e_028e.ini
-            parte1.patch
-            parte2.patch
