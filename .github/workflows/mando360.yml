@@ -18,8 +18,16 @@ jobs:
           git config user.name "CI"
           git remote add revvv https://github.com/revvv/Nintendont-XBOX360.git
           git fetch revvv master
-          git diff HEAD...revvv/master -- kernel/HID.c kernel/HID.h controllerconfigs/045e_028e.ini loader/source/ppc/PADReadGC/source/PADReadGC.c > mando360.patch
-          git apply --3way --verbose mando360.patch
+          git diff HEAD...revvv/master -- kernel/HID.c kernel/HID.h controllerconfigs/045e_028e.ini > parte1.patch
+          git diff HEAD...revvv/master -- loader/source/ppc/PADReadGC/source/PADReadGC.c > parte2.patch
+          git apply --3way --whitespace=nowarn parte1.patch
+          git apply --3way --whitespace=nowarn parte2.patch || echo "HAY CONFLICTO en PADReadGC.c"
+          F=loader/source/ppc/PADReadGC/source/PADReadGC.c
+          if grep -q '<<<<<<<' $F; then
+            echo "===== ZONAS EN CONFLICTO ====="
+            grep -n -B6 -A25 '<<<<<<<' $F
+            exit 1
+          fi
 
       - name: Compilar
         run: |
@@ -33,4 +41,5 @@ jobs:
           path: |
             **/*.dol
             controllerconfigs/045e_028e.ini
-            mando360.patch
+            parte1.patch
+            parte2.patch
