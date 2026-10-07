@@ -21,13 +21,22 @@ jobs:
           git diff HEAD...revvv/master -- kernel/HID.c kernel/HID.h controllerconfigs/045e_028e.ini > parte1.patch
           git diff HEAD...revvv/master -- loader/source/ppc/PADReadGC/source/PADReadGC.c > parte2.patch
           git apply --3way --whitespace=nowarn parte1.patch
-          git apply --3way --whitespace=nowarn parte2.patch || echo "HAY CONFLICTO en PADReadGC.c"
-          F=loader/source/ppc/PADReadGC/source/PADReadGC.c
-          if grep -q '<<<<<<<' $F; then
-            echo "===== ZONAS EN CONFLICTO ====="
-            grep -n -B6 -A25 '<<<<<<<' $F
+          git apply --3way --whitespace=nowarn parte2.patch || echo "Hay conflictos en PADReadGC.c, se resuelven abajo"
+          python3 - <<'EOF'
+          import re
+          p = 'loader/source/ppc/PADReadGC/source/PADReadGC.c'
+          s = open(p, newline='').read()
+          n = len(re.findall(r'<<<<<<< ours', s))
+          s = re.sub(r'<<<<<<< ours\r?\n.*?=======\r?\n(.*?)>>>>>>> theirs\r?\n', r'\1', s, flags=re.S)
+          open(p, 'w', newline='').write(s)
+          print('Conflictos resueltos con la version de revvv:', n)
+          EOF
+          if grep -q '<<<<<<<\|>>>>>>>' loader/source/ppc/PADReadGC/source/PADReadGC.c; then
+            echo "TODAVIA HAY MARCAS DE CONFLICTO"
+            grep -n -B3 -A3 '<<<<<<<\|>>>>>>>' loader/source/ppc/PADReadGC/source/PADReadGC.c
             exit 1
           fi
+          git diff --stat
 
       - name: Compilar
         run: |
