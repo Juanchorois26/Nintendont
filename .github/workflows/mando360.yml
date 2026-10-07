@@ -1,0 +1,36 @@
+name: Compilar con mando 360
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bajar el código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Aplicar los cambios del mando de revvv
+        run: |
+          git config user.email "ci@example.com"
+          git config user.name "CI"
+          git remote add revvv https://github.com/revvv/Nintendont-XBOX360.git
+          git fetch revvv master
+          git diff HEAD...revvv/master -- kernel/HID.c kernel/HID.h controllerconfigs/045e_028e.ini loader/source/ppc/PADReadGC/source/PADReadGC.c > mando360.patch
+          git apply --3way --verbose mando360.patch
+
+      - name: Compilar
+        run: |
+          docker run --rm --volume="$PWD":/work --workdir=/work henriquegemignani/docker-devkitpro-nintendont bash -c "chmod +x Build.sh && ./Build.sh"
+
+      - name: Guardar el resultado
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nintendont-mando360
+          path: |
+            **/*.dol
+            controllerconfigs/045e_028e.ini
+            mando360.patch
