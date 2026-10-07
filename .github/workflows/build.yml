@@ -6,16 +6,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: henriquegemignani/docker-devkitpro-nintendont
     steps:
       - name: Bajar el código
         uses: actions/checkout@v4
 
       - name: Compilar
         run: |
-          chmod +x Build.sh
-          ./Build.sh
+          docker run --rm --volume="$PWD":/work --workdir=/work henriquegemignani/docker-devkitpro-nintendont bash -c "chmod +x Build.sh && ./Build.sh"
 
       - name: Guardar el resultado
         uses: actions/upload-artifact@v4
@@ -23,5 +20,4 @@ jobs:
         with:
           name: nintendont-build
           path: |
-            loader/loader.dol
             **/*.dol
